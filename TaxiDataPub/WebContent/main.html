@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        /* Always set the map height explicitly to define the size of the div
+         * element that contains the map. */
+        #map {
+            height: 800px;
+            width: 800px;
+            float: left
+        }
+
+        #chart {
+            height: 800px;
+            width: 600px;
+            float: right;
+        }
+
+        #back{
+            background-color:#242f3e ;
+        }
+
+        label {
+            color: #B4886B;
+
+        }
+        
+    </style>
+</head>
+
+
+
+<body id="back">
+<div>
+    <input type="checkbox" id="Manhattan">
+    <label for="Manhattan">Manhattan</label>
+    <input type="checkbox" id="Brooklyn">
+    <label for="Brooklyn">Brooklyn</label>
+    <input type="checkbox" id="Queens">
+    <label for="Queens">Queens</label>
+    <input type="checkbox" id="The Bronx">
+    <label for="The Bronx">Brooklyn</label>
+    <input type="checkbox" id="Staten Island">
+    <label for="Staten Island">Staten Island</label>
+</div>
+<div>
+    <button id="subscribe" onclick="send()">Subscribe</button>
+    <hr/>
+</div>
+<div id="message"></div>
+
+<div id="map"></div>
+<div id="chart"></div>
+<script type="text/javascript">
+    var websocket = null;
+    //判断当前浏览器是否支持WebSocket
+    if ('WebSocket' in window) {
+        websocket = new WebSocket("ws://localhost:8080//websocket");
+    }
+    else {
+        alert('Broswer deos not support websocket')
+    }
+
+    //连接发生错误的回调方法
+    websocket.onerror = function () {
+        setMessageInnerHTML("WebSocket connection error");
+    };
+
+    //连接成功建立的回调方法
+    websocket.onopen = function () {
+        setMessageInnerHTML("WebSocket connection success");
+    }
+
+    //接收到消息的回调方法
+    websocket.onmessage = function (event) {
+        setMessageInnerHTML(event.data);
+    }
+
+    //连接关闭的回调方法
+    websocket.onclose = function () {
+        setMessageInnerHTML("WebSocket connection error");
+    }
+
+    //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
+    window.onbeforeunload = function () {
+        closeWebSocket();
+    }
+
+    //将消息显示在网页上
+    function setMessageInnerHTML(innerHTML) {
+        document.getElementById('message').innerHTML += innerHTML + '<br/>';
+    }
+
+    //关闭WebSocket连接
+    function closeWebSocket() {
+        websocket.close();
+    }
+
+    function send() {
+        var districts=["Manhattan","Brooklyn","Queens","The Bronx","Staten Island"];
+        var selectdis=[];
+        for(var i=0;i<5;i++)
+        {
+            if(document.getElementById(districts[i]).checked)
+                selectdis.push(districts[i]);
+        }
+        var json=JSON.stringify(selectdis);
+        websocket.send(json);
+    }
+</script>
+
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+
+<script src="./lib/jquery-3.3.1.js"></script>
+
+
+
+<script>
+    google.charts.load('current', {'packages': ['bar']});
+    document.addEventListener('DOMContentLoaded', function () {
+        google.setOnLoadCallback(function () {
+
+            var chartData = [];
+            chartData.push(['did', 'count']);
+
+            var options = {
+                chart: {
+                    title: 'Traffic'
+                },
+                backgroundColor: 'transparent'
+            };
+
+            var main = new google.maps.Map(document.getElementById('map'), {
+                zoom: 12,
+                center: {lat: 40.674, lng: -73.945},
+                styles: [
+                    {elementType: 'geometry', stylers: [{color: '#242f3e'}]},
+                    {elementType: 'labels.text.stroke', stylers: [{color: '#242f3e'}]},
+                    {elementType: 'labels.text.fill', stylers: [{color: '#746855'}]},
+                    {
+                        featureType: 'administrative.locality',
+                        elementType: 'labels.text.fill',
+                        stylers: [{color: '#d59563'}]
+                    },
+                    {
+                        featureType: 'poi',
+                        elementType: 'labels.text.fill',
+                        stylers: [{color: '#d59563'}]
+                    },
+                    {
+                        featureType: 'poi.park',
+                        elementType: 'geometry',
+                        stylers: [{color: '#263c3f'}]
+                    },
+                    {
+                        featureType: 'poi.park',
+                        elementType: 'labels.text.fill',
+                        stylers: [{color: '#6b9a76'}]
+                    },
+                    {
+                        featureType: 'road',
+                        elementType: 'geometry',
+                        stylers: [{color: '#38414e'}]
+                    },
+                    {
+                        featureType: 'road',
+                        elementType: 'geometry.stroke',
+                        stylers: [{color: '#212a37'}]
+                    },
+                    {
+                        featureType: 'road',
+                        elementType: 'labels.text.fill',
+                        stylers: [{color: '#9ca5b3'}]
+                    },
+                    {
+                        featureType: 'road.highway',
+                        elementType: 'geometry',
+                        stylers: [{color: '#746855'}]
+                    },
+                    {
+                        featureType: 'road.highway',
+                        elementType: 'geometry.stroke',
+                        stylers: [{color: '#1f2835'}]
+                    },
+                    {
+                        featureType: 'road.highway',
+                        elementType: 'labels.text.fill',
+                        stylers: [{color: '#f3d19c'}]
+                    },
+                    {
+                        featureType: 'transit',
+                        elementType: 'geometry',
+                        stylers: [{color: '#2f3948'}]
+                    },
+                    {
+                        featureType: 'transit.station',
+                        elementType: 'labels.text.fill',
+                        stylers: [{color: '#d59563'}]
+                    },
+                    {
+                        featureType: 'water',
+                        elementType: 'geometry',
+                        stylers: [{color: '#17263c'}]
+                    },
+                    {
+                        featureType: 'water',
+                        elementType: 'labels.text.fill',
+                        stylers: [{color: '#515c6d'}]
+                    },
+                    {
+                        featureType: 'water',
+                        elementType: 'labels.text.stroke',
+                        stylers: [{color: '#17263c'}]
+                    }
+                ]
+            });
+
+
+            $.ajax({
+                url: "test.json",
+                type: "GET",
+                dataType: "json",
+                success: function (data) {
+
+                    $.each(data.district, function (i, item) {
+                        var coords = item.coordinates;
+                        var latLng = new google.maps.LatLng(coords[1], coords[0]);
+                        var color = '#ff0000';
+                        chartData.push([item.id, item.count]);
+                        var circle = new google.maps.Circle({
+                            path: google.maps.SymbolPath.CIRCLE,
+                            strokeOpacity: 0.8,
+                            strokeWeight: .5,
+                            fillColor: color,
+                            fillOpacity: 0.35,
+                            map: main,
+                            center: latLng,
+                            radius: item.count
+                        });
+
+                    })
+                    var newchartData = google.visualization.arrayToDataTable(chartData);
+                    var chart = new google.charts.Bar(document.getElementById('chart'));
+                    chart.draw(newchartData, google.charts.Bar.convertOptions(options));
+
+                }
+            })
+        });
+
+
+    });
+
+
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBgxrn8pW72ihbrfDMJb9CEfFIwJgga8Fo"></script>
+
+
+</body>
+</html>
