@@ -162,7 +162,7 @@
         var data = JSON.parse(event);
         google.charts.load('current', {'packages': ['bar'],callback: drawChart});
         function drawChart() {
-            document.getElementById('chart').innerHTML += data.district[1].id + '<br/>';
+            document.getElementById('chart').innerHTML += data.district[1].prediction + '<br/>';
             var chartData = [];
             chartData.push(['did', 'count']);
 
@@ -177,7 +177,7 @@
                 var coords = item.coordinates;
                 var latLng = new google.maps.LatLng(coords[1], coords[0]);
                 var color = '#ff0000';
-                chartData.push([item.id, item.count]);
+                chartData.push([item.prediction, item.count]);
                 var circle = new google.maps.Circle({
                     path: google.maps.SymbolPath.CIRCLE,
                     strokeOpacity: 0.8,

@@ -1,9 +1,11 @@
 package client;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Vector;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -16,25 +18,43 @@ import client.DHTService;
 
 public class DHTable {
 	//used to store latest published data
-	String dataPath;
+	String loPath;//the location file path
+	String couPath; //the count file path
 	String DType;
-	DHTable(String type, String path){
-		dataPath = path;
+	DHTable(String type){
 		DType = type;
 	}
+	Vector<Double> getCoordinate(int disNum) throws IOException{
+		Vector<Double> vec = null;
+		BufferedReader br = new BufferedReader(new FileReader(loPath));
+		String tempstr = null;
+		int counter = 0;
+		while((tempstr = br.readLine()) != null) {
+			if(counter == disNum)
+				break;
+		}
+		double lot = Double.parseDouble(tempstr.substring(1, tempstr.indexOf(',')));
+		double lat = Double.parseDouble(tempstr.substring(tempstr.indexOf(',')+1,tempstr.length()));
+		vec.add(lot);
+		vec.add(lat);
+		return vec;
+	}
+	
 	String parseData() throws IOException {
+		//the output json
 		JSONObject js = new JSONObject();
 		JSONArray jarr = new JSONArray();
-		BufferedReader br = new BufferedReader(new FileReader(dataPath));
-		String tempstr = br.readLine();//skip the first line
+		//open the coordinate file
+		BufferedReader br = new BufferedReader(new FileReader(couPath));
+		String tempstr = null;
 		while((tempstr = br.readLine()) != null) {
-			String[] props = tempstr.split("\t");
-			JSONObject tempjs = new JSONObject();
-			tempjs.put("id", Integer.parseInt(props[0]));
-			tempjs.put("count", Integer.parseInt(props[1]));
+			JSONObject tempjs = new JSONObject(tempstr);
+			tempjs.put("coordinates", getCoordinate(tempjs.getInt("prediction")));
+			jarr.put(tempjs);
 		}
 		js.put("type", "TaxiData");
 		js.put("district", jarr);
+		System.out.println(js.toString());
 		return js.toString();
 		
 	}
@@ -44,11 +64,27 @@ public class DHTable {
 		Context ncontext = new InitialContext();
 		DHTService ser = (DHTService)ncontext.lookup(url+"DHTService");
 		System.out.println("client created");
-		String filePath = "input file path here";
-		DHTable dt = new DHTable(args[1],filePath);
+		String filePath = "/home/ubuntu/TaxiDataAnalysis/spark/";
+		DHTable dt = new DHTable(args[1]);
+		int month_counter = 4;
+		int tag = 1;
+		switch(args[1]) {
+		case "Manhattan":
+			tag = 1; break;
+		case "Queen":
+			tag =4; break;
+		case "The Bronx":
+			tag = 2; break;
+		case "Brooklyn":
+			tag = 3; break;
+		}
 		while(true) {
-			//parseData after every 100 seconds
+			//build the data path
+			dt.couPath = filePath+"KmResult"+tag+month_counter+"/"+"km"+tag+month_counter+".json";
+			dt.loPath = dt.couPath = filePath+"bz"+tag+month_counter+"/"+"bz"+tag+month_counter+".json";
+			//
 			ser.sendMessage(dt.DType, dt.parseData());
+			//parseData after every 100 seconds
 			Thread.sleep(10000);
 		}
 	}
