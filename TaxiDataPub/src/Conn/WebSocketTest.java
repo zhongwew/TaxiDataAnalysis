@@ -29,12 +29,15 @@ public class WebSocketTest {
         		types.add(jarr.getString(i));
 		if(!SocketsPool.contains(this))
 			SocketsPool.addSocket(this);
+		sendMessage("message received");
     }
 
     @OnOpen
     public void onOpen(Session session) throws RemoteException, NamingException {
-    		if(!DHTServer.server_status)
+    		if(!DHTServer.server_status) {
     			DHTServer.run();//open the server when first connection comes
+    			DHTServer.server_status = true;
+    		}
     		this.session = session;
         System.out.println("Client connected");
     }
@@ -42,7 +45,7 @@ public class WebSocketTest {
     @OnClose
     public void onClose() {
         System.out.println("Connection closed");
-        
+        SocketsPool.eraseSocket(this);
     }
     
     public void sendMessage(String message) throws IOException {
