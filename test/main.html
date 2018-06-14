@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        /* Always set the map height explicitly to define the size of the div
+         * element that contains the map. */
+        #map {
+            height: 100%;
+        }
+        /* Optional: Makes the sample page fill the window. */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<script src="./lib/jquery-3.3.1.js"></script>
+<script>
+
+    var map;
+    function initMap() {
+        main = new google.maps.Map(document.getElementById('map'), {
+            zoom: 2,
+            center: new google.maps.LatLng(66, 90),
+            mapTypeId: 'terrain'
+        });
+
+        $.ajax({
+            url: "test.json",
+            type: "GET",
+            dataType: "json",
+            success: function(data) {
+                $.each(data.district, function(i, item) {
+                    var coords=item.coordinates;
+                    var did = item.id.toString();
+                    var latLng = new google.maps.LatLng(coords[1], coords[0]);
+                    var marker = new google.maps.Marker({
+                        position: latLng,
+                        label: did,
+                        map: main
+                    });
+
+
+                })
+            }
+        })
+
+    }
+
+
+</script>
+<script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBgxrn8pW72ihbrfDMJb9CEfFIwJgga8Fo&callback=initMap">
+</script>
+</body>
+</html>
