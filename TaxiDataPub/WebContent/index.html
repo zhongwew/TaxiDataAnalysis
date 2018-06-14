@@ -24,6 +24,57 @@
             color: #BEBEBE;
         }
 
+        /* button
+---------------------------------------------- */
+        .button {
+            display: inline-block;
+            zoom: 1; /* zoom and *display = ie7 hack for display:inline-block */
+            *display: inline;
+            vertical-align: baseline;
+            margin: 0 2px;
+            outline: none;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            font: 14px/100% Arial, Helvetica, sans-serif;
+            padding: .5em 2em .55em;
+            text-shadow: 0 1px 1px #B4886B;
+            -webkit-border-radius: .5em;
+            -moz-border-radius: .5em;
+            border-radius: .5em;
+            -webkit-box-shadow: 0 1px 2px #B4886B;
+            -moz-box-shadow: 0 1px 2px #B4886B;
+            box-shadow: 0 1px 2px rgba(0,0,0,.2);
+        }
+        .button:hover {
+            text-decoration: none;
+        }
+        .button:active {
+            position: relative;
+            top: 1px;
+        }
+
+        /* black */
+        .black {
+            color: #d7d7d7;
+            border: solid 1px #333;
+            background: #333;
+            background: -webkit-gradient(linear, left top, left bottom, from(#5A759C), to(#242f3e));
+            background: -moz-linear-gradient(top,  #666,  #000);
+            filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#5A759C', endColorstr='#242f3e');
+        }
+        .black:hover {
+            background: #000;
+            background: -webkit-gradient(linear, left top, left bottom, from(#444), to(#000));
+            background: -moz-linear-gradient(top,  #444,  #000);
+            filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#444444', endColorstr='#000000');
+        }
+        .black:active {
+            color: #666;
+            background: -webkit-gradient(linear, left top, left bottom, from(#000), to(#444));
+            background: -moz-linear-gradient(top,  #000,  #444);
+            filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#000000', endColorstr='#666666');
+        }
     </style>
 </head>
 
@@ -38,20 +89,18 @@
     <input type="checkbox" id="Queens">
     <label for="Queens">Queens</label>
     <input type="checkbox" id="The Bronx">
-    <label for="The Bronx">Brooklyn</label>
-    <input type="checkbox" id="Staten Island">
-    <label for="Staten Island">Staten Island</label>
-</div>
-<div>
-    <button id="subscribe" onclick="send()">Subscribe</button>
+    <label for="The Bronx">The Bronx</label>
+    <button class="button black" onclick="send()">subscribe</button>
     <hr/>
 </div>
+
 <div id="message"></div>
 
 <div id="map"></div>
 <div id="chart"></div>
 <script type="text/javascript">
     var main;
+    var circles=[];
     document.addEventListener('DOMContentLoaded', function () {
         main = new google.maps.Map(document.getElementById('map'), {
             zoom: 12,
@@ -141,7 +190,7 @@
     var websocket = null;
     //判断当前浏览器是否支持WebSocket
     if ('WebSocket' in window) {
-        websocket = new WebSocket("ws://localhost:8080/TaxiDataPub/websocket");
+        websocket = new WebSocket("ws://34.210.75.219:8080/TaxiDataPub/websocket");
     }
     else {
         alert('Broswer deos not support websocket')
@@ -159,7 +208,7 @@
 
     //接收到消息的回调方法
     websocket.onmessage = function (event) {
-        var data = JSON.parse(event);
+        var data = JSON.parse(event.data);
         google.charts.load('current', {'packages': ['bar'],callback: drawChart});
         function drawChart() {
             document.getElementById('chart').innerHTML += data.district[1].id + '<br/>';
@@ -173,11 +222,22 @@
                 backgroundColor: 'transparent'
             };
 
-            $.each(data, function (i, item) {
+            var newlat=0;
+            var newlng=0;
+            var discount=0;
+
+            for(var i in circles) {
+                circles[i].setMap(null);
+            }
+            circles = [];
+            $.each(data.district, function (i, item) {
                 var coords = item.coordinates;
+                newlat+=coords[1];
+                newlng+=coords[0];
+                discount++;
                 var latLng = new google.maps.LatLng(coords[1], coords[0]);
                 var color = '#ff0000';
-                chartData.push([item.id, item.count]);
+                chartData.push([i, item.count]);
                 var circle = new google.maps.Circle({
                     path: google.maps.SymbolPath.CIRCLE,
                     strokeOpacity: 0.8,
@@ -186,10 +246,12 @@
                     fillOpacity: 0.35,
                     map: main,
                     center: latLng,
-                    radius: item.count
+                    radius: Math.sqrt(item.count)*2
                 });
+                circles.push(circle);
 
             })
+            main.setCenter( {lat: newlat/discount, lng: newlng/discount});
             var newchartData = google.visualization.arrayToDataTable(chartData);
             var chart = new google.charts.Bar(document.getElementById('chart'));
             chart.draw(newchartData, google.charts.Bar.convertOptions(options));
@@ -217,17 +279,17 @@
     }
 
     function send() {
-        var districts=["Manhattan","Brooklyn","Queens","The Bronx","Staten Island"];
+        var districts=["Manhattan","Brooklyn","Queens","The Bronx"];
         var selectdis=[];
-        for(var i=0;i<5;i++)
+        for(var i=0;i<4;i++)
         {
             if(document.getElementById(districts[i]).checked)
                 selectdis.push(districts[i]);
         }
-        //var json=JSON.stringify(selectdis);
-        var json = {};
-        json.district = selectdis;
-        websocket.send(JSON.stringify(json));
+        var obj={"district":selectdis};
+        var json=JSON.stringify(obj);
+
+        websocket.send(json);
     }
 
 
